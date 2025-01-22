@@ -95,7 +95,7 @@ void execute() {
                 break;
             }
             case OPCODE_JMP: {
-                unsigned char address = memory[pc++];
+                int address = memory[pc++];
                 if (address >= MEMORY_SIZE) {
                     printf("Error: Invalid jump address %d\n", address);
                     return;
