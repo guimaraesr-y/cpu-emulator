@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h> 
 #include <string.h>
-#include "../opcodes.h"
+#include "./opcodes.h"
 
 void assembleLine(char* line, FILE* outputFile);
 int getOpcode(char* opcodeString);
