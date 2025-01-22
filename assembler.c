@@ -70,7 +70,6 @@ void assembleLine(char* line, FILE* outputFile) {
             }
             break;
         case OPCODE_HLT:
-            // No operands needed for HLT
             break;
         default:
             printf("Opcode ainda não implementado: %s\n", opcodeString);
@@ -82,14 +81,14 @@ void assembleLine(char* line, FILE* outputFile) {
         if (operand1Str[0] == 'R') {
             operand1 = operand1Str[1] - '0'; // Convert 'R0' to 0, etc.
         } else {
-            operand1 = atoi(operand1Str); // Convert to integer
+            operand1 = atoi(operand1Str);
         }
     }
     if (strlen(operand2Str) > 0) {
         if (operand2Str[0] == 'R') {
             operand2 = operand2Str[1] - '0'; // Convert 'R0' to 0, etc.
         } else {
-            operand2 = atoi(operand2Str); // Convert to integer
+            operand2 = atoi(operand2Str);
         }
     }
 
@@ -123,7 +122,7 @@ int getOpcode(char* opcodeString) {
     if (strcmp(opcodeString, "sub") == 0) return OPCODE_SUB;
     if (strcmp(opcodeString, "jmp") == 0) return OPCODE_JMP;
     if (strcmp(opcodeString, "hlt") == 0) return OPCODE_HLT;
-    return -1; // Opcode desconhecido
+    return -1; // Unknown Opcode
 }
 
 void mov(int r, int value, FILE* outputFile) {
