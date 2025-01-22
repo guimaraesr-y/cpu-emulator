@@ -104,6 +104,17 @@ void execute() {
                 printf("JMP %d\n", address);
                 break;
             }
+            case OPCODE_XOR: {  
+                unsigned char reg1 = memory[pc++];
+                unsigned char reg2 = memory[pc++];
+                if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
+                    printf("Error: Invalid register(s) in XOR\n");
+                    return;
+                }
+                registers[reg1] ^= registers[reg2];
+                printf("XOR R%d, R%d\n", reg1, reg2);
+                break;
+            }
             case OPCODE_HLT:
                 printf("HLT\n");
                 return; // End execution

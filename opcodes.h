@@ -2,4 +2,5 @@
 #define OPCODE_ADD  0x02
 #define OPCODE_SUB  0x03
 #define OPCODE_JMP  0x04
+#define OPCODE_XOR  0x05
 #define OPCODE_HLT  0xFF
