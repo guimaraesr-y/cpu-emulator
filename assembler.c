@@ -10,13 +10,14 @@ void mov(int r, int value, FILE* outputFile);
 void add(int r1, int r2, FILE* outputFile); 
 void sub(int r1, int r2, FILE* outputFile);
 void jmp(int address, FILE* outputFile);
+void xor(int r1, int r2, FILE* outputFile);
 void hlt(FILE* outputFile);
 
 int main(int argc, char* argv[]) {
     if (argc < 3) {
         printf("Usage: %s <input_file> <output_file>\n", argv[0]);
         return 1;
-    }   
+    }
 
     FILE* input_file = fopen(argv[1], "r");  
     if (input_file == NULL) {
@@ -58,6 +59,7 @@ void assembleLine(char* line, FILE* outputFile) {
         case OPCODE_MOV:
         case OPCODE_ADD:
         case OPCODE_SUB:
+        case OPCODE_XOR:
             if (sscanf(line, "%*s %7[^,], %7s", operand1Str, operand2Str) != 2) {
                 printf("Erro: Operandos inválidos para %s\n", opcodeString);
                 return;
@@ -106,6 +108,9 @@ void assembleLine(char* line, FILE* outputFile) {
         case OPCODE_JMP:
             jmp(operand1, outputFile);
             break;
+        case OPCODE_XOR:
+            xor(operand1, operand2, outputFile);
+            break;
         case OPCODE_HLT:
             hlt(outputFile);
             break;
@@ -120,6 +125,7 @@ int getOpcode(char* opcodeString) {
     if (strcmp(opcodeString, "mov") == 0) return OPCODE_MOV;
     if (strcmp(opcodeString, "add") == 0) return OPCODE_ADD;
     if (strcmp(opcodeString, "sub") == 0) return OPCODE_SUB;
+    if (strcmp(opcodeString, "xor") == 0) return OPCODE_XOR;
     if (strcmp(opcodeString, "jmp") == 0) return OPCODE_JMP;
     if (strcmp(opcodeString, "hlt") == 0) return OPCODE_HLT;
     return -1; // Unknown Opcode
@@ -130,7 +136,6 @@ void mov(int r, int value, FILE* outputFile) {
     bytecode[0] = OPCODE_MOV;
     bytecode[1] = r;
     bytecode[2] = value;
-    printf("Opcode: %X R%d, %d\n", OPCODE_MOV, r, value);  
     fwrite(bytecode, sizeof(unsigned char), 3, outputFile);
 }
 
@@ -139,7 +144,6 @@ void add(int r1, int r2, FILE* outputFile) {
     bytecode[0] = OPCODE_ADD;
     bytecode[1] = r1;
     bytecode[2] = r2;
-    printf("Opcode: %X R%d, R%d\n", OPCODE_ADD, r1, r2);    
     fwrite(bytecode, sizeof(unsigned char), 3, outputFile);
 }
 
@@ -148,7 +152,6 @@ void sub(int r1, int r2, FILE* outputFile) {
     bytecode[0] = OPCODE_SUB;
     bytecode[1] = r1;
     bytecode[2] = r2;
-    printf("Opcode: %X R%d, R%d\n", OPCODE_SUB, r1, r2);    
     fwrite(bytecode, sizeof(unsigned char), 3, outputFile);
 }
 
@@ -156,13 +159,19 @@ void jmp(int address, FILE* outputFile) {
     unsigned char bytecode[2];
     bytecode[0] = OPCODE_JMP;
     bytecode[1] = address;
-    printf("Opcode: %X %d\n", OPCODE_JMP, address);    
     fwrite(bytecode, sizeof(unsigned char), 2, outputFile);
+}
+
+void xor(int r1, int r2, FILE* outputFile) {
+    unsigned char bytecode[3];
+    bytecode[0] = OPCODE_XOR;
+    bytecode[1] = r1;
+    bytecode[2] = r2;
+    fwrite(bytecode, sizeof(unsigned char), 3, outputFile);
 }
 
 void hlt(FILE* outputFile) {
     unsigned char bytecode[1];
     bytecode[0] = OPCODE_HLT;
-    printf("Opcode: %X\n", OPCODE_HLT);    
     fwrite(bytecode, sizeof(unsigned char), 1, outputFile);
 }
