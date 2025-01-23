@@ -5,6 +5,12 @@
 #define NUM_REGISTERS 8
 #define MEMORY_SIZE 1024
 
+void execute_mov(int *pc);
+void execute_add(int *pc);
+void execute_sub(int *pc);
+void execute_jmp(int *pc);
+void execute_xor(int *pc);  
+
 int registers[NUM_REGISTERS];
 unsigned char memory[MEMORY_SIZE];
 
@@ -61,60 +67,21 @@ void execute() {
 
         // Decode and execute the instruction
         switch (opcode) {
-            case OPCODE_MOV: {
-                unsigned char reg = memory[pc++];
-                unsigned char value = memory[pc++];
-                if (reg >= NUM_REGISTERS) {
-                    printf("Error: Invalid register R%d\n", reg);
-                    return;
-                }
-                registers[reg] = value;
-                printf("MOV R%d, %d\n", reg, value);
+            case OPCODE_MOV:
+                execute_mov(&pc);
                 break;
-            }
-            case OPCODE_ADD: {
-                unsigned char reg1 = memory[pc++];
-                unsigned char reg2 = memory[pc++];
-                if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
-                    printf("Error: Invalid register(s) in ADD\n");
-                    return;
-                }
-                registers[reg1] += registers[reg2];
-                printf("ADD R%d, R%d\n", reg1, reg2);
+            case OPCODE_ADD:
+                execute_add(&pc);
                 break;
-            }
-            case OPCODE_SUB: {
-                unsigned char reg1 = memory[pc++];
-                unsigned char reg2 = memory[pc++];
-                if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
-                    printf("Error: Invalid register(s) in SUB\n");
-                    return;
-                }
-                registers[reg1] -= registers[reg2];
-                printf("SUB R%d, R%d\n", reg1, reg2);
+            case OPCODE_SUB:
+                execute_sub(&pc);
                 break;
-            }
-            case OPCODE_JMP: {
-                int address = memory[pc++];
-                if (address >= MEMORY_SIZE) {
-                    printf("Error: Invalid jump address %d\n", address);
-                    return;
-                }
-                pc = address;
-                printf("JMP %d\n", address);
+            case OPCODE_JMP:
+                execute_jmp(&pc);
                 break;
-            }
-            case OPCODE_XOR: {  
-                unsigned char reg1 = memory[pc++];
-                unsigned char reg2 = memory[pc++];
-                if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
-                    printf("Error: Invalid register(s) in XOR\n");
-                    return;
-                }
-                registers[reg1] ^= registers[reg2];
-                printf("XOR R%d, R%d\n", reg1, reg2);
+            case OPCODE_XOR:
+                execute_xor(&pc);
                 break;
-            }
             case OPCODE_HLT:
                 printf("HLT\n");
                 return; // End execution
@@ -123,4 +90,58 @@ void execute() {
                 return;
         }
     }
+}
+
+void execute_mov(int *pc) {
+    unsigned char reg = memory[(*pc)++];
+    unsigned char value = memory[(*pc)++];
+    if (reg >= NUM_REGISTERS) {
+        printf("Error: Invalid register R%d\n", reg);
+        return;
+    }
+    registers[reg] = value;
+    printf("MOV R%d, %d\n", reg, value);
+}
+
+void execute_add(int *pc) {
+    unsigned char reg1 = memory[(*pc)++];
+    unsigned char reg2 = memory[(*pc)++];
+    if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
+        printf("Error: Invalid register(s) in ADD\n");
+        return;
+    }
+    registers[reg1] += registers[reg2];
+    printf("ADD R%d, R%d\n", reg1, reg2);
+}
+
+void execute_sub(int *pc) {
+    unsigned char reg1 = memory[(*pc)++];
+    unsigned char reg2 = memory[(*pc)++];
+    if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
+        printf("Error: Invalid register(s) in SUB\n");
+        return;
+    }
+    registers[reg1] -= registers[reg2];
+    printf("SUB R%d, R%d\n", reg1, reg2);
+}
+
+void execute_jmp(int *pc) {
+    int address = memory[(*pc)++];
+    if (address >= MEMORY_SIZE) {
+        printf("Error: Invalid jump address %d\n", address);
+        return;
+    }
+    *pc = address;
+    printf("JMP %d\n", address);
+}
+
+void execute_xor(int *pc) {
+    unsigned char reg1 = memory[(*pc)++];
+    unsigned char reg2 = memory[(*pc)++];
+    if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
+        printf("Error: Invalid register(s) in XOR\n");
+        return;
+    }
+    registers[reg1] ^= registers[reg2];
+    printf("XOR R%d, R%d\n", reg1, reg2);
 }
