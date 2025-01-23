@@ -2,9 +2,11 @@
 #include <stdlib.h> 
 #include <string.h>
 #include "./opcodes.h"
+#include "./glolbals.h"
 
 void assembleLine(char* line, FILE* outputFile);
 int getOpcode(char* opcodeString);
+void writeBytesToFile(unsigned char opcode, unsigned char arg1, unsigned char arg2, FILE* outputFile);
 
 void mov(int r, int value, FILE* outputFile);
 void add(int r1, int r2, FILE* outputFile); 
@@ -132,46 +134,43 @@ int getOpcode(char* opcodeString) {
 }
 
 void mov(int r, int value, FILE* outputFile) {
-    unsigned char bytecode[3];
-    bytecode[0] = OPCODE_MOV;
-    bytecode[1] = r;
-    bytecode[2] = value;
-    fwrite(bytecode, sizeof(unsigned char), 3, outputFile);
+    writeBytesToFile(OPCODE_MOV, r, value, outputFile);
 }
 
 void add(int r1, int r2, FILE* outputFile) {
-    unsigned char bytecode[3];
-    bytecode[0] = OPCODE_ADD;
-    bytecode[1] = r1;
-    bytecode[2] = r2;
-    fwrite(bytecode, sizeof(unsigned char), 3, outputFile);
+    writeBytesToFile(OPCODE_ADD, r1, r2, outputFile);
 }
 
 void sub(int r1, int r2, FILE* outputFile) {
-    unsigned char bytecode[3];
-    bytecode[0] = OPCODE_SUB;
-    bytecode[1] = r1;
-    bytecode[2] = r2;
-    fwrite(bytecode, sizeof(unsigned char), 3, outputFile);
+    writeBytesToFile(OPCODE_SUB, r1, r2, outputFile);
 }
 
 void jmp(int address, FILE* outputFile) {
-    unsigned char bytecode[2];
-    bytecode[0] = OPCODE_JMP;
-    bytecode[1] = address;
-    fwrite(bytecode, sizeof(unsigned char), 2, outputFile);
+    writeBytesToFile(OPCODE_JMP, address, 0, outputFile);
 }
 
 void xor(int r1, int r2, FILE* outputFile) {
-    unsigned char bytecode[3];
-    bytecode[0] = OPCODE_XOR;
-    bytecode[1] = r1;
-    bytecode[2] = r2;
-    fwrite(bytecode, sizeof(unsigned char), 3, outputFile);
+    writeBytesToFile(OPCODE_XOR, r1, r2, outputFile);
 }
 
 void hlt(FILE* outputFile) {
-    unsigned char bytecode[1];
-    bytecode[0] = OPCODE_HLT;
-    fwrite(bytecode, sizeof(unsigned char), 1, outputFile);
+    writeBytesToFile(OPCODE_HLT, 0, 0, outputFile);
+}
+
+void writeBytesToFile(unsigned char opcode, unsigned char arg1, unsigned char arg2, FILE* outputFile) {
+    if (outputFile == NULL) {
+        printf("Error: NULL pointer passed to writeBytesToFile\n");
+        return;
+    }
+
+    unsigned char bytecode[LINE_SIZE];
+    bytecode[0] = opcode;
+    bytecode[1] = arg1;
+    bytecode[2] = arg2;
+    
+    size_t bytes_written = fwrite(bytecode, sizeof(unsigned char), LINE_SIZE, outputFile);
+    if (bytes_written != LINE_SIZE) {
+        printf("Error: Could not write all bytes to file\n");
+        return;
+    }
 }
