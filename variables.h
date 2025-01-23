@@ -1,0 +1,2 @@
+#define NUM_REGISTERS 8
+#define MEMORY_SIZE 1024
