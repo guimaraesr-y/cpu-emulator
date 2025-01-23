@@ -2,7 +2,6 @@
 #include <stdlib.h> 
 #include <string.h>
 #include "./opcodes.h"
-#include "./glolbals.h"
 #include "./assembler/assemblerFunctions.c"
 
 void assembleLine(char* line, FILE* outputFile);
