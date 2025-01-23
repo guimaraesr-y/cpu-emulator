@@ -1,1 +1,0 @@
-#define LINE_SIZE 3 // opcode arg1, arg2

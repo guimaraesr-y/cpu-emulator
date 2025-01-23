@@ -3,6 +3,7 @@
 #include <string.h>
 #include "./opcodes.h"
 #include "./glolbals.h"
+#include "./assembler/assemblerFunctions.c"
 
 void assembleLine(char* line, FILE* outputFile);
 int getOpcode(char* opcodeString);
@@ -131,46 +132,4 @@ int getOpcode(char* opcodeString) {
     if (strcmp(opcodeString, "jmp") == 0) return OPCODE_JMP;
     if (strcmp(opcodeString, "hlt") == 0) return OPCODE_HLT;
     return -1; // Unknown Opcode
-}
-
-void mov(int r, int value, FILE* outputFile) {
-    writeBytesToFile(OPCODE_MOV, r, value, outputFile);
-}
-
-void add(int r1, int r2, FILE* outputFile) {
-    writeBytesToFile(OPCODE_ADD, r1, r2, outputFile);
-}
-
-void sub(int r1, int r2, FILE* outputFile) {
-    writeBytesToFile(OPCODE_SUB, r1, r2, outputFile);
-}
-
-void jmp(int address, FILE* outputFile) {
-    writeBytesToFile(OPCODE_JMP, address, 0, outputFile);
-}
-
-void xor(int r1, int r2, FILE* outputFile) {
-    writeBytesToFile(OPCODE_XOR, r1, r2, outputFile);
-}
-
-void hlt(FILE* outputFile) {
-    writeBytesToFile(OPCODE_HLT, 0, 0, outputFile);
-}
-
-void writeBytesToFile(unsigned char opcode, unsigned char arg1, unsigned char arg2, FILE* outputFile) {
-    if (outputFile == NULL) {
-        printf("Error: NULL pointer passed to writeBytesToFile\n");
-        return;
-    }
-
-    unsigned char bytecode[LINE_SIZE];
-    bytecode[0] = opcode;
-    bytecode[1] = arg1;
-    bytecode[2] = arg2;
-    
-    size_t bytes_written = fwrite(bytecode, sizeof(unsigned char), LINE_SIZE, outputFile);
-    if (bytes_written != LINE_SIZE) {
-        printf("Error: Could not write all bytes to file\n");
-        return;
-    }
 }
