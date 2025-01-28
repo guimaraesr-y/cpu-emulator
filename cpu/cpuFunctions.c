@@ -26,6 +26,7 @@ void execute_add(int *pc, int *registers, unsigned char *memory) {
     unsigned char reg1;
     unsigned char reg2;
     readBytesFromMemory(pc, memory, &reg1, &reg2);
+
     if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
         printf("Error: Invalid register(s) in ADD\n");
         return;
@@ -38,6 +39,7 @@ void execute_sub(int *pc, int *registers, unsigned char *memory) {
     unsigned char reg1;
     unsigned char reg2;
     readBytesFromMemory(pc, memory, &reg1, &reg2);
+
     if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
         printf("Error: Invalid register(s) in SUB\n");
         return;
@@ -47,7 +49,6 @@ void execute_sub(int *pc, int *registers, unsigned char *memory) {
 }
 
 void execute_jmp(int *pc, unsigned char *memory) {
-    // int address = memory[(*pc)++];
     unsigned char address;
     readBytesFromMemory(pc, memory, &address, NULL);
 
@@ -64,6 +65,7 @@ void execute_xor(int *pc, int *registers, unsigned char *memory) {
     unsigned char reg1;
     unsigned char reg2;
     readBytesFromMemory(pc, memory, &reg1, &reg2);
+
     if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
         printf("Error: Invalid register(s) in XOR\n");
         return;
