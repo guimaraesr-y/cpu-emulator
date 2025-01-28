@@ -2,6 +2,7 @@
 #include <stdlib.h> 
 #include <string.h>
 #include "./opcodes.h"
+#include "./variables.h"
 #include "./assembler/assemblerFunctions.c"
 
 void assembleLine(char* line, FILE* outputFile);
@@ -34,7 +35,7 @@ int main(int argc, char* argv[]) {
 
     char line[256];
     while (fgets(line, sizeof(line), input_file) != NULL) {
-        assembleLine(line, output_file);       
+        assembleLine(line, output_file);
     }
 
     return 0;
