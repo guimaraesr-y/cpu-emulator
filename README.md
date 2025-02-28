@@ -1,5 +1,7 @@
 # 🚀 CPU Emulator & Assembler
 
+Leia a versão [em português](./docs/readme_pt_br.md).
+
 ## 📝 About the Project
 
 This project is a simple CPU emulator and assembler written in C. It demonstrates how to simulate a minimal CPU with basic instructions and how to assemble textual instructions into machine-readable bytecode. This is a great learning tool for understanding how assembly languages and CPU instruction sets work at a low level.
