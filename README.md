@@ -1,35 +1,41 @@
-# CPU Emulator and Assembler
+# 🚀 CPU Emulator & Assembler
 
-## Overview
+## 📝 About the Project
 
 This project is a simple CPU emulator and assembler written in C. It demonstrates how to simulate a minimal CPU with basic instructions and how to assemble textual instructions into machine-readable bytecode. This is a great learning tool for understanding how assembly languages and CPU instruction sets work at a low level.
 
-## Features
+## ✨ Features
 
-- **CPU Emulator:**
-  - Supports a set of basic operations: `mov`, `add`, `sub`, `jmp`, and `hlt`.
-  - Executes instructions stored in memory.
-  - Simulates 8 general-purpose registers (`R0` to `R7`) and a memory space of 1024 bytes.
-- **Assembler:**
-  - Converts textual instructions into binary bytecode.
-  - Supports instructions like `mov`, `add`, `sub`, `jmp`, and `hlt`.
-- Modular design for easy extension of the instruction set.
+### 🖥️ CPU Emulator
 
-## Prerequisites
+✔️ Supports basic operations: `mov`, `add`, `sub`, `jmp`, `xor`, and `hlt`.<br>
+✔️ Simulates **8 registers** (`R0` to `R7`).<br>
+✔️ **1024 bytes** of memory.<br>
+✔️ Executes instructions directly from memory.<br>
+
+### ⚙️ Assembler
+
+✔️ Converts textual instructions into **bytecode**.<br>
+✔️ Supports the following commands: `mov`, `add`, `sub`, `jmp`, `xor`, `hlt`.<br>
+✔️ Easy to extend with new instructions!<br>
+
+---
+
+## 📦 Prerequisites
 
 - A C compiler (e.g., `gcc`).
 - Basic knowledge of C programming and CPU architecture.
 
-## Getting Started
+## 🚀 How to Use
 
-### Cloning the Repository
+### 🔹 Cloning the Repository
 
 ```bash
-git clone https://github.com/guimaraesr-y/cpu-emulator
-cd cpu-emulator
+ git clone https://github.com/guimaraesr-y/cpu-emulator
+ cd cpu-emulator
 ```
 
-### Building the Project
+### 🔹 Compiling the Project
 
 To compile the assembler and emulator:
 
@@ -44,11 +50,9 @@ or use Makefile:
 make
 ```
 
-### Running the Project
+### 🔹 Assembling an Assembly Program
 
-#### Assembling Instructions
-
-Create a text file (e.g., `program.asm`) with the following instructions:
+Create a file `program.asm` with the following content:
 
 ```asm
 mov R0, 10
@@ -65,7 +69,7 @@ Run the assembler to generate the bytecode:
 ./assembler program.asm program.bin
 ```
 
-#### Running the Emulator
+### 🔹 Running the Emulator
 
 Execute the emulator with the assembled bytecode:
 
@@ -73,9 +77,7 @@ Execute the emulator with the assembled bytecode:
 ./emulator program.bin
 ```
 
-### Expected Output
-
-After running the emulator, the state of the registers will be displayed:
+### 📌 Expected Output
 
 ```plaintext
 R0: 30
@@ -88,7 +90,7 @@ R6: 0
 R7: 0
 ```
 
-## Instruction Set
+## 🛠️ Instruction Set
 
 | Instruction | Description                        | Example          |
 |-------------|------------------------------------|------------------|
@@ -99,10 +101,12 @@ R7: 0
 | `xor`       | Performs a bitwise XOR operation   | `xor R0, R1`     |
 | `hlt`       | Halts the program execution        | `hlt`            |
 
-## Contributing
+## 🤝 Contributing
 
-Contributions are welcome! Feel free to open issues or submit pull requests to improve the project.
+Feel free to open **issues** or submit **pull requests** to improve the project. All contributions are welcome! 🛠️🚀
 
-## Acknowledgments
+---
 
-This project is inspired by basic CPU architecture and assembly language principles. Special thanks to anyone who provided feedback or suggestions during its development :)
+## 🙌 Acknowledgments
+
+This project is inspired by the basics of **CPU architecture** and **assembly language**. Thanks to everyone who contributed ideas and feedback! 🎉
