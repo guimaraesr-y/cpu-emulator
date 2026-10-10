@@ -1,75 +1,97 @@
-#include <stdio.h>
-#include "../variables.h"
+#include "cpu.h"
+#include "../opcodes.h"
 
-void readBytesFromMemory(int* pc, unsigned char* memory, unsigned char* arg1, unsigned char* arg2) {
-    *arg1 = memory[(*pc)++];
+#include <string.h>
 
-    if (arg2 != NULL) {
-        *arg2 = memory[(*pc)++];
-    }
+void cpu_reset(Cpu *cpu) {
+    memset(cpu, 0, sizeof(*cpu));
+    cpu->status = CPU_RUNNING;
 }
 
-void execute_mov(int *pc, int *registers, unsigned char *memory) {
-    unsigned char reg;
-    unsigned char value;
-    readBytesFromMemory(pc, memory, &reg, &value);
-
-    if (reg >= NUM_REGISTERS) {
-        printf("Error: Invalid register R%d\n", reg);
-        return;
+CpuStatus cpu_load(Cpu *cpu, const uint8_t *program, size_t size) {
+    cpu_reset(cpu);
+    if (program == NULL || size == 0 || size > MEMORY_SIZE || size % INSTRUCTION_SIZE != 0) {
+        cpu->status = CPU_BAD_PROGRAM;
+        return cpu->status;
     }
-    registers[reg] = value;
-    printf("MOV R%d, %d\n", reg, value);
+    memcpy(cpu->memory, program, size);
+    cpu->program_size = size;
+    return cpu->status;
 }
 
-void execute_add(int *pc, int *registers, unsigned char *memory) {
-    unsigned char reg1;
-    unsigned char reg2;
-    readBytesFromMemory(pc, memory, &reg1, &reg2);
-
-    if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
-        printf("Error: Invalid register(s) in ADD\n");
-        return;
+CpuStatus cpu_step(Cpu *cpu) {
+    if (cpu->status != CPU_RUNNING) {
+        return cpu->status;
     }
-    registers[reg1] += registers[reg2];
-    printf("ADD R%d, R%d\n", reg1, reg2);
+    if (cpu->pc >= cpu->program_size || cpu->pc % INSTRUCTION_SIZE != 0 ||
+        cpu->program_size - cpu->pc < INSTRUCTION_SIZE) {
+        cpu->status = CPU_BAD_PC;
+        return cpu->status;
+    }
+
+    const uint8_t opcode = cpu->memory[cpu->pc];
+    const uint8_t arg1 = cpu->memory[cpu->pc + 1];
+    const uint8_t arg2 = cpu->memory[cpu->pc + 2];
+
+    switch (opcode) {
+        case OPCODE_MOV:
+            if (arg1 >= NUM_REGISTERS) {
+                cpu->status = CPU_BAD_REGISTER;
+                return cpu->status;
+            }
+            cpu->registers[arg1] = arg2;
+            break;
+        case OPCODE_ADD:
+        case OPCODE_SUB:
+        case OPCODE_XOR:
+            if (arg1 >= NUM_REGISTERS || arg2 >= NUM_REGISTERS) {
+                cpu->status = CPU_BAD_REGISTER;
+                return cpu->status;
+            }
+            if (opcode == OPCODE_ADD) {
+                cpu->registers[arg1] = (uint8_t)(cpu->registers[arg1] + cpu->registers[arg2]);
+            } else if (opcode == OPCODE_SUB) {
+                cpu->registers[arg1] = (uint8_t)(cpu->registers[arg1] - cpu->registers[arg2]);
+            } else {
+                cpu->registers[arg1] ^= cpu->registers[arg2];
+            }
+            break;
+        case OPCODE_JMP: {
+            const uint16_t target = (uint16_t)((uint16_t)arg1 | ((uint16_t)arg2 << 8));
+            if (target >= cpu->program_size || target % INSTRUCTION_SIZE != 0) {
+                cpu->status = CPU_BAD_JUMP;
+                return cpu->status;
+            }
+            cpu->pc = target;
+            return cpu->status;
+        }
+        case OPCODE_HLT:
+            if (arg1 != 0 || arg2 != 0) {
+                cpu->status = CPU_BAD_ENCODING;
+                return cpu->status;
+            }
+            cpu->pc += INSTRUCTION_SIZE;
+            cpu->status = CPU_HALTED;
+            return cpu->status;
+        default:
+            cpu->status = CPU_BAD_OPCODE;
+            return cpu->status;
+    }
+
+    cpu->pc += INSTRUCTION_SIZE;
+    return cpu->status;
 }
 
-void execute_sub(int *pc, int *registers, unsigned char *memory) {
-    unsigned char reg1;
-    unsigned char reg2;
-    readBytesFromMemory(pc, memory, &reg1, &reg2);
-
-    if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
-        printf("Error: Invalid register(s) in SUB\n");
-        return;
+const char *cpu_status_message(CpuStatus status) {
+    switch (status) {
+        case CPU_RUNNING: return "running";
+        case CPU_HALTED: return "halted";
+        case CPU_BAD_PROGRAM: return "empty, oversized or incomplete bytecode";
+        case CPU_BAD_PC: return "PC outside loaded instructions (missing HLT?)";
+        case CPU_BAD_OPCODE: return "unknown opcode";
+        case CPU_BAD_REGISTER: return "invalid register index";
+        case CPU_BAD_JUMP: return "jump target outside the program or not aligned to an instruction";
+        case CPU_BAD_ENCODING: return "non-zero HLT padding";
+        default: return "unknown CPU status";
     }
-    registers[reg1] -= registers[reg2];
-    printf("SUB R%d, R%d\n", reg1, reg2);
-}
-
-void execute_jmp(int *pc, unsigned char *memory) {
-    unsigned char address;
-    readBytesFromMemory(pc, memory, &address, NULL);
-
-    int addressInt = (int)address;
-    if (addressInt >= MEMORY_SIZE) {
-        printf("Error: Invalid jump address %d\n", addressInt);
-        return;
-    }
-    *pc = addressInt;
-    printf("JMP %d\n", addressInt);
-}
-
-void execute_xor(int *pc, int *registers, unsigned char *memory) {
-    unsigned char reg1;
-    unsigned char reg2;
-    readBytesFromMemory(pc, memory, &reg1, &reg2);
-
-    if (reg1 >= NUM_REGISTERS || reg2 >= NUM_REGISTERS) {
-        printf("Error: Invalid register(s) in XOR\n");
-        return;
-    }
-    registers[reg1] ^= registers[reg2];
-    printf("XOR R%d, R%d\n", reg1, reg2);
 }

@@ -1,4 +1,8 @@
+#ifndef CPU_EMULATOR_VARIABLES_H
+#define CPU_EMULATOR_VARIABLES_H
+
 #define NUM_REGISTERS 8
 #define MEMORY_SIZE 1024
+#define INSTRUCTION_SIZE 3
 
-#define LINE_SIZE 3 // opcode arg1, arg2
+#endif
