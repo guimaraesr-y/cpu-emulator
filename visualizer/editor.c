@@ -1,5 +1,5 @@
 #include "editor.h"
-#include "raymath.h"
+#include "editor_scroll.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -25,9 +25,11 @@ void editor_draw(LabEditor *e,LabApp *app,Rectangle bounds) {
     if (e->cursor>length) e->cursor=length;
     Vector2 mouse=GetMousePosition();
     bool inside=CheckCollisionPointRec(mouse,bounds);
+    bool reveal_cursor=false;
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         e->focused=inside;
         if (inside) {
+            reveal_cursor=true;
             unsigned target=e->top+(unsigned)((mouse.y-bounds.y-8)/22);
             size_t at=0; for (unsigned row=0;row<target && app->source[at];row++) {
                 while (app->source[at] && app->source[at]!='\n') ++at;
@@ -42,14 +44,14 @@ void editor_draw(LabEditor *e,LabApp *app,Rectangle bounds) {
             e->cursor=at+col; e->select_all=false;
         }
     }
-    unsigned lines=1; for (size_t i=0;i<length;i++) if (app->source[i]=='\n') ++lines;
     float wheel=inside ? GetMouseWheelMove():0;
-    if (inside) {
-        int top=(int)e->top-(int)(wheel*3);
-        e->top=(unsigned)Clamp((float)top,0,(float)(lines-1));
-    }
     if (e->focused && app->has_source) {
         bool ctrl=IsKeyDown(KEY_LEFT_CONTROL)||IsKeyDown(KEY_RIGHT_CONTROL);
+        const int navigation[]={KEY_LEFT,KEY_RIGHT,KEY_HOME,KEY_END,KEY_UP,KEY_DOWN,
+                                KEY_BACKSPACE,KEY_DELETE,KEY_ENTER,KEY_TAB};
+        for (unsigned i=0;i<sizeof(navigation)/sizeof(navigation[0]);i++)
+            if (IsKeyPressed(navigation[i]) || IsKeyPressedRepeat(navigation[i])) reveal_cursor=true;
+        if (ctrl && (IsKeyPressed(KEY_V)||IsKeyPressed(KEY_X))) reveal_cursor=true;
         if (ctrl && IsKeyPressed(KEY_A)) e->select_all=true;
         if (ctrl && IsKeyPressed(KEY_C)) SetClipboardText(app->source);
         if (ctrl && IsKeyPressed(KEY_V)) insert(e,app,GetClipboardText());
@@ -76,14 +78,15 @@ void editor_draw(LabEditor *e,LabApp *app,Rectangle bounds) {
             memmove(app->source+e->cursor,app->source+e->cursor+1,strlen(app->source)-e->cursor);
         if (!ctrl && IsKeyPressed(KEY_ENTER)) insert(e,app,"\n");
         if (IsKeyPressed(KEY_TAB)) insert(e,app,"    ");
-        int ch; while ((ch=GetCharPressed())) if (!ctrl && ch>=32 && ch<127) { char text[2]={(char)ch,0}; insert(e,app,text); }
-        unsigned cursor_line=0; for (size_t i=0;i<e->cursor;i++) if (app->source[i]=='\n') ++cursor_line;
-        unsigned visible=(unsigned)(bounds.height/22)-1;
-        if (!wheel) {
-            if (cursor_line<e->top) e->top=cursor_line;
-            if (cursor_line>=e->top+visible) e->top=cursor_line-visible+1;
-        }
+        int ch; while ((ch=GetCharPressed())) if (!ctrl && ch>=32 && ch<127) { char text[2]={(char)ch,0}; insert(e,app,text); reveal_cursor=true; }
     }
+    unsigned lines=1, cursor_line=0;
+    for (size_t i=0;app->source[i];i++) if (app->source[i]=='\n') {
+        ++lines;
+        if (i<e->cursor) ++cursor_line;
+    }
+    unsigned visible=bounds.height>=44 ? (unsigned)(bounds.height/22)-1:1;
+    e->top=editor_scroll(e->top,lines,visible,cursor_line,-(int)(wheel*3),reveal_cursor);
     DrawRectangleRec(bounds,(Color){10,17,28,255});
     DrawRectangleLinesEx(bounds,1,e->focused ? (Color){62,230,197,255}:(Color){35,56,76,255});
     BeginScissorMode((int)bounds.x+2,(int)bounds.y+2,(int)bounds.width-4,(int)bounds.height-4);
