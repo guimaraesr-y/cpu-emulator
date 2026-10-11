@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "opcodes.h"
 #include "variables.h"
@@ -238,6 +239,29 @@ static int resolve_jumps(Assembly *assembly) {
     return 1;
 }
 
+/*
+ * Resolve existing paths before opening the output for writing.
+ * stat() follows symlinks, so this also catches hardlinks and path aliases.
+ */
+static int output_references_source(const char *source, const char *output) {
+    struct stat source_info;
+    struct stat output_info;
+
+    if (stat(source, &source_info) != 0) {
+        perror("Cannot inspect assembly source");
+        return -1;
+    }
+    if (stat(output, &output_info) != 0) {
+        if (errno == ENOENT) {
+            return 0;
+        }
+        perror("Cannot inspect bytecode output");
+        return -1;
+    }
+    return source_info.st_dev == output_info.st_dev &&
+           source_info.st_ino == output_info.st_ino;
+}
+
 int main(int argc, char **argv) {
     if (argc != 3) {
         fprintf(stderr, "Usage: %s <source.asm> <program.bin>\n", argv[0]);
@@ -250,6 +274,14 @@ int main(int argc, char **argv) {
     FILE *input = fopen(argv[1], "r");
     if (input == NULL) {
         perror("Cannot open assembly source");
+        return EXIT_FAILURE;
+    }
+    const int aliases_source = output_references_source(argv[1], argv[2]);
+    if (aliases_source != 0) {
+        if (aliases_source > 0) {
+            fprintf(stderr, "Input and output must not reference the same file\n");
+        }
+        fclose(input);
         return EXIT_FAILURE;
     }
 
