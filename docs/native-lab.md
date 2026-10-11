@@ -74,7 +74,7 @@ The four phases are a **didactic presentation of an atomic instruction**, not an
 python3 scripts/check-native.py ./bin/cpu-lab
 ```
 
-The smoke mode opens a hidden native GL window, advances the assembled example, writes an arithmetic-phase image and `lab-smoke.png.final.png`, prints the final CPU state and exits. The filename may include an existing directory path. It returns nonzero on a CPU fault, failure to export images, or failure to halt within 100 instruction attempts. On headless Linux use `xvfb-run -a`.
+The smoke mode opens a hidden native GL window, advances the assembled example, writes an execution-phase image on the third instruction and `lab-smoke.png.final.png`, prints the final CPU state and exits. If a short or faulting program never reaches that phase, the requested image captures its final state instead. Success requires the requested image to be captured and both exports to succeed. The filename may include an existing directory path. It returns nonzero on a CPU fault, failure to export images, or failure to halt within 100 instruction attempts. On headless Linux use `xvfb-run -a`.
 
 The native check script opens hidden GL windows for the default example, XOR and invalid-register/missing-HLT/truncated/oversized programs, checks exit status and final state, and verifies capture export to absolute paths.
 

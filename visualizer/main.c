@@ -68,6 +68,11 @@ int main(int argc,char **argv) {
         }
         bool done = smoke && lab.phase == LAB_IDLE && (lab.cpu.status != CPU_RUNNING || lab.steps >= 100);
         if (done) {
+            /* Short/faulting programs still produce the requested capture. */
+            if (!captured) {
+                capture_ok = save_frame(capture) && capture_ok;
+                captured = true;
+            }
             char final_capture[1024]; snprintf(final_capture,sizeof(final_capture),"%s.final.png",capture);
             capture_ok = save_frame(final_capture) && capture_ok;
         }
@@ -81,5 +86,5 @@ int main(int argc,char **argv) {
     }
     UnloadRenderTexture(canvas);
     CloseWindow();
-    return smoke && (lab.cpu.status != CPU_HALTED || !capture_ok) ? 1 : 0;
+    return smoke && (lab.cpu.status != CPU_HALTED || !captured || !capture_ok) ? 1 : 0;
 }
