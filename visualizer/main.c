@@ -4,17 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static bool load_file(Playback *lab,const char *path) {
-    FILE *file = fopen(path,"rb");
-    if (!file) { fprintf(stderr,"Cannot open program: %s\n",path); return false; }
-    uint8_t bytes[MEMORY_SIZE+1];
-    size_t size = fread(bytes,1,sizeof(bytes),file);
-    bool failed = ferror(file) != 0;
-    fclose(file);
-    if (failed) { fprintf(stderr,"Cannot read program: %s\n",path); return false; }
-    lab_load(lab,bytes,size);
-    return true;
-}
 static bool save_frame(const char *path) {
     rlDrawRenderBatchActive();
     Image frame = LoadImageFromScreen();
@@ -29,13 +18,14 @@ int main(int argc,char **argv) {
     char default_path[1024];
     snprintf(default_path,sizeof(default_path),"%sdemo.bin",GetApplicationDirectory());
     const char *path = argc > arg ? argv[arg] : default_path;
-    Playback lab;
-    if (!load_file(&lab,path)) return 1;
+    LabApp app; app_init(&app);
+    if (!smoke && argc<=arg) app_example(&app,0);
+    else if (!app_open(&app,path)) { fprintf(stderr,"%s\n",app.message); return 1; }
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT | (smoke ? FLAG_WINDOW_HIDDEN:0));
-    InitWindow(1280,800,"CPU Lab / Native C");
+    InitWindow(1500,900,"CPU Lab / Native C");
     if (!IsWindowReady()) return 1;
-    SetWindowMinSize(1100,760);
+    SetWindowMinSize(1400,850);
     SetTargetFPS(smoke ? 0 : 60);
     LabScene scene; scene_init(&scene); ui_init();
     RenderTexture2D canvas = LoadRenderTexture((int)ui_viewport().width,(int)ui_viewport().height);
@@ -43,9 +33,24 @@ int main(int argc,char **argv) {
     bool captured = false;
     bool capture_ok = true;
     while (!WindowShouldClose()) {
-        if ((smoke && lab.phase == LAB_IDLE && lab.steps < 100) || IsKeyPressed(KEY_SPACE)) lab_step(&lab);
-        if (IsKeyPressed(KEY_R)) lab_reset(&lab);
-        lab_update(&lab,smoke ? 1.0f/60 : GetFrameTime());
+        if (!smoke && IsFileDropped()) {
+            FilePathList files=LoadDroppedFiles();
+            if (files.count && app_open(&app,files.paths[0])) ui_reset_editor();
+            UnloadDroppedFiles(files);
+        }
+        Playback lab=app.playback;
+        if (smoke && lab.phase == LAB_IDLE && lab.steps < 100) lab_step(&lab);
+        if (smoke) { app.playback=lab; lab_update(&app.playback,1.0f/60); }
+        else {
+            if (!ui_editor_active()) {
+                if (IsKeyPressed(KEY_SPACE)) app_step(&app);
+                if (IsKeyPressed(KEY_P)) app_toggle_play(&app);
+                if (IsKeyPressed(KEY_R)) app_reset(&app);
+            }
+            if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_ENTER)) app_compile(&app);
+            app_update(&app,GetFrameTime());
+        }
+        lab=app.playback;
         Rectangle viewport = ui_viewport();
         scene_input(&scene,viewport);
         if (canvas.texture.width != (int)viewport.width || canvas.texture.height != (int)viewport.height) {
@@ -61,7 +66,7 @@ int main(int argc,char **argv) {
         DrawTexturePro(canvas.texture,(Rectangle){0,0,(float)canvas.texture.width,-(float)canvas.texture.height},
             viewport,(Vector2){0,0},0,WHITE);
         scene_labels(&scene,&lab,viewport);
-        ui_draw(&lab,GetFileName(path));
+        ui_draw(&app,GetFileName(app.path));
         ++frames;
         if (smoke && lab.steps == 3 && lab.phase == LAB_EXECUTE && !captured) {
             capture_ok = save_frame(capture); captured = true;
@@ -81,10 +86,11 @@ int main(int argc,char **argv) {
         if (smoke && frames > 20000) break;
     }
     if (smoke) {
+        Playback lab=app.playback;
         printf("Smoke: status=%s PC=%u R0=%u R1=%u steps=%u frames=%u\n",
             cpu_status_message(lab.cpu.status),lab.cpu.pc,lab.cpu.registers[0],lab.cpu.registers[1],lab.steps,frames);
     }
     UnloadRenderTexture(canvas);
     CloseWindow();
-    return smoke && (lab.cpu.status != CPU_HALTED || !captured || !capture_ok) ? 1 : 0;
+    return smoke && (app.playback.cpu.status != CPU_HALTED || !captured || !capture_ok) ? 1 : 0;
 }

@@ -65,7 +65,7 @@ The assembler rejects invalid operands and labels; the emulator rejects malforme
 
 ## Native 3D laboratory
 
-The Phase 1 desktop laboratory is written in C with raylib/raygui. It visualizes the real CPU state through fetch/decode/execute/writeback presentation phases, with step/reset controls, orbit/zoom camera, RAM bytes and decimal/hex/binary registers.
+The Phase 2 desktop laboratory is written in C with raylib/raygui. It visualizes the real CPU state through fetch/decode/execute/writeback presentation phases, with play/pause/step/reset/speed controls, a native Assembly editor using the CLI's parser, paged RAM inspection, orbit/zoom camera and decimal/hex/binary registers.
 
 ```sh
 cmake -S . -B build -DBUILD_VISUALIZER=ON
