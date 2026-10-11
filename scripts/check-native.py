@@ -12,6 +12,8 @@ def main():
         ("two_instructions", bytes([1, 0, 42, 255, 0, 0]), 0, "PC=6 R0=42 R1=0 steps=2"),
         ("demo", None, 0, "PC=21 R0=30 R1=246 steps=6"),
         ("xor", bytes([1, 0, 3, 1, 1, 5, 5, 0, 1, 255, 0, 0]), 0, "R0=6"),
+        ("asm_labels", b"; source map\r\njmp end\r\nmov R0, 99\r\nend: mov R0, 42\r\nhlt\r\n", 0, "PC=12 R0=42"),
+        ("asm_error", b"mov R9, 1\nhlt\n", 1, "empty, oversized or incomplete bytecode"),
         ("register_fault", bytes([2, 0, 8]), 1, "invalid register index"),
         ("missing_halt", bytes([1, 0, 7]), 1, "PC outside loaded instructions"),
         ("truncated", bytes([1, 0]), 1, "empty, oversized or incomplete bytecode"),
@@ -23,7 +25,7 @@ def main():
             capture = root / f"{name}.png"
             command = [str(executable), "--smoke-test", str(capture)]
             if bytecode is not None:
-                program = root / f"{name}.bin"
+                program = root / f"{name}.{'asm' if name.startswith('asm_') else 'bin'}"
                 program.write_bytes(bytecode)
                 command.append(str(program))
             result = subprocess.run(command, capture_output=True, text=True, timeout=30)

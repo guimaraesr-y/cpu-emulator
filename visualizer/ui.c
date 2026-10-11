@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "editor.h"
 #define RAYGUI_IMPLEMENTATION
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -13,7 +14,12 @@
 #include <string.h>
 
 static const Color ink = {220,230,244,255}, muted = {133,153,177,255}, teal = {62,230,197,255};
-Rectangle ui_viewport(void) { return (Rectangle){0,96,(float)GetScreenWidth()-350,(float)GetScreenHeight()-180}; }
+static LabEditor editor;
+static bool path_edit;
+static int tab, example;
+void ui_reset_editor(void) { memset(&editor,0,sizeof(editor)); path_edit=false; }
+bool ui_editor_active(void) { return editor.focused || path_edit; }
+Rectangle ui_viewport(void) { return (Rectangle){360,96,(float)GetScreenWidth()-710,(float)GetScreenHeight()-210}; }
 void ui_init(void) {
     GuiSetStyle(DEFAULT,TEXT_SIZE,16);
     GuiSetStyle(DEFAULT,BASE_COLOR_NORMAL,0x18353fff);
@@ -44,7 +50,47 @@ static int wrap(const char *text,int x,int y,int width,int size,Color color) {
     if (length) { DrawText(line,x,y,size,color); y+=size+6; }
     return y;
 }
-void ui_draw(Playback *lab, const char *program_name) {
+static void workspace(LabApp *app) {
+    int h=GetScreenHeight();
+    DrawRectangle(0,96,350,h-210,(Color){13,21,34,255});
+    GuiToggleGroup((Rectangle){16,106,140,28},"ASSEMBLY;RAM",&tab);
+    if (!tab) {
+        if (GuiComboBox((Rectangle){16,148,195,28},"Addition;XOR;Loop",&example)) {
+            app_example(app,(unsigned)example); memset(&editor,0,sizeof(editor));
+        }
+        if (GuiButton((Rectangle){222,148,110,28},"ASSEMBLE")) { app_compile(app); editor.focused=false; }
+        editor_draw(&editor,app,(Rectangle){16,190,316,(float)h-415});
+        DrawText(app_dirty(app) ? "Edited / assemble before running" : "Current line follows loaded program",16,h-213,14,(Color){62,230,197,255});
+        if (!app->has_source) DrawText("Binary has no source map. Pick an example.",16,183,12,(Color){255,138,122,255});
+    } else {
+        editor.focused=false;
+        if (GuiButton((Rectangle){16,148,65,28},"PREV") && app->memory_page) --app->memory_page;
+        if (GuiButton((Rectangle){262,148,65,28},"NEXT") && app->memory_page<7) ++app->memory_page;
+        GuiLabel((Rectangle){93,148,162,28},TextFormat("RAM page %u / 8",app->memory_page+1));
+        const Cpu *cpu=lab_visible(&app->playback);
+        unsigned base=app->memory_page*128;
+        for (unsigned row=0;row<16;row++) {
+            unsigned addr=base+row*8; int y=196+(int)row*24;
+            DrawText(TextFormat("%03X",addr),16,y,14,(Color){102,127,151,255});
+            for (unsigned col=0;col<8;col++) {
+                unsigned at=addr+col;
+                bool fetched=app->playback.trace.fetched && app->playback.phase!=LAB_IDLE &&
+                    at>=app->playback.trace.before.pc && at<app->playback.trace.before.pc+3u;
+                Color color=fetched ? (Color){62,230,197,255} : at<cpu->program_size ?
+                    (Color){220,230,244,255} : (Color){74,95,119,255};
+                DrawText(TextFormat("%02X",cpu->memory[at]),60+(int)col*34,y,14,color);
+            }
+        }
+        DrawText("Addresses and bytes in hexadecimal",16,600,14,(Color){102,127,151,255});
+    }
+    if (GuiTextBox((Rectangle){16,(float)h-182,316,28},app->path,sizeof(app->path),path_edit)) path_edit=!path_edit;
+    if (GuiButton((Rectangle){16,(float)h-146,145,28},"OPEN .asm/.bin")) {
+        app_open(app,app->path); memset(&editor,0,sizeof(editor)); path_edit=false;
+    }
+    if (GuiButton((Rectangle){173,(float)h-146,159,28},"SAVE .asm")) app_save(app,app->path);
+}
+void ui_draw(LabApp *app, const char *program_name) {
+    Playback *lab=&app->playback;
     int w = GetScreenWidth(), h = GetScreenHeight(), x = w-330;
     DrawRectangle(0,0,w,88,(Color){13,21,34,255});
     DrawText("CPU / LAB",28,20,30,ink);
@@ -53,7 +99,7 @@ void ui_draw(Playback *lab, const char *program_name) {
     if (lab->phase == LAB_IDLE && lab->cpu.status != CPU_RUNNING)
         phase = lab->cpu.status == CPU_HALTED ? "HALTED" : "FAULT";
     DrawText(phase,w-190,30,22,teal);
-    DrawRectangle(w-350,96,350,h-180,(Color){13,21,34,255});
+    DrawRectangle(w-350,96,350,h-210,(Color){13,21,34,255});
     DrawText("PROGRAM",x,116,14,teal);
     wrap(program_name,x,142,310,18,ink);
     const Cpu *c = lab_visible(lab);
@@ -72,23 +118,17 @@ void ui_draw(Playback *lab, const char *program_name) {
         bool changed = (lab->phase == LAB_WRITEBACK || lab->phase == LAB_IDLE) && (lab->trace.changed & (1u<<i));
         DrawText(TextFormat("R%u   %3u   0x%02X   %s",i,c->registers[i],c->registers[i],bits),x,380+(int)i*25,16,changed ? teal:ink);
     }
-    DrawText("RAM / instruction window",28,112,14,teal);
-    unsigned address = c->pc;
-    if (address >= c->program_size && c->program_size >= 3) address = (unsigned)c->program_size-3;
-    unsigned start = address >= 6 ? address-6 : 0;
-    for (unsigned row=0;row<5;row++) {
-        unsigned at = start+row*3;
-        if (at+2>=c->program_size) break;
-        DrawText(TextFormat("%03u    %02X %02X %02X",at,c->memory[at],c->memory[at+1],c->memory[at+2]),28,140+(int)row*23,17,at==c->pc ? teal:muted);
-    }
-    DrawRectangle(0,h-80,w,80,(Color){13,21,34,255});
-    if (lab->phase != LAB_IDLE || lab->cpu.status != CPU_RUNNING) GuiDisable();
-    bool step = GuiButton((Rectangle){28,(float)h-62,145,40},"STEP / SPACE");
+    DrawRectangle(0,h-110,w,110,(Color){13,21,34,255});
+    if (app_dirty(app) || app->limited || (lab->phase==LAB_IDLE && lab->cpu.status!=CPU_RUNNING)) GuiDisable();
+    if (GuiButton((Rectangle){16,(float)h-98,120,36},app->playing ? "PAUSE / P":"PLAY / P")) app_toggle_play(app);
+    if (GuiButton((Rectangle){148,(float)h-98,120,36},"STEP / SPACE")) app_step(app);
     GuiEnable();
-    if (step) lab_step(lab);
-    if (GuiButton((Rectangle){185,(float)h-62,115,40},"RESET / R")) lab_reset(lab);
-    DrawText("RMB: orbit   Wheel: zoom   1-4: focus   Home: overview",325,h-56,14,muted);
-    wrap("Functional model. Phases are didactic; one atomic CPU step.",325,h-34,w-350,13,muted);
+    if (GuiButton((Rectangle){280,(float)h-98,110,36},"RESET / R")) app_reset(app);
+    GuiSlider((Rectangle){465,(float)h-91,200,24},"SPEED",TextFormat("%.2fx",app->speed),&app->speed,0.25f,8);
+    wrap(app->message,16,h-48,w-32,14,app_dirty(app) ? (Color){255,183,117,255}:muted);
+    DrawText("RMB: orbit / Wheel: zoom / 1-4: focus / Home: overview",720,h-89,14,muted);
+    DrawText("Didactic phases / atomic CPU step",720,h-66,13,muted);
     Color status = c->status == CPU_RUNNING ? muted : c->status == CPU_HALTED ? teal : (Color){255,138,122,255};
-    wrap(cpu_status_message(c->status),x,h-155,310,15,status);
+    wrap(cpu_status_message(c->status),x,h-180,310,15,status);
+    workspace(app);
 }
