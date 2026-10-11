@@ -1,5 +1,6 @@
 """End-to-end checks for the ISA v1 assembler and CPU executable."""
 
+import os
 import re
 import subprocess
 import tempfile
@@ -106,6 +107,53 @@ class EndToEndTests(unittest.TestCase):
             hlt
         """))
         self.assertEqual(registers[0], 254)
+
+    def test_output_must_not_alias_assembly_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "input.asm"
+            original = b"mov R0, 7\nhlt\n"
+            source.write_bytes(original)
+
+            aliases = [str(source), f"{directory}/./input.asm"]
+            symlink = Path(directory) / "linked.asm"
+            try:
+                symlink.symlink_to(source)
+                aliases.append(str(symlink))
+            except (OSError, NotImplementedError):
+                pass
+            hardlink = Path(directory) / "hardlinked.asm"
+            try:
+                os.link(source, hardlink)
+                aliases.append(str(hardlink))
+            except (OSError, NotImplementedError):
+                pass
+
+            for output in aliases:
+                with self.subTest(output=output):
+                    result = subprocess.run(
+                        [str(ASSEMBLER), str(source), output],
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    self.assertNotEqual(result.returncode, 0, output)
+                    self.assertEqual(source.read_bytes(), original)
+                    self.assertEqual(Path(output).read_bytes(), original)
+
+    def test_existing_distinct_output_can_be_replaced(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "input.asm"
+            output = Path(directory) / "output.bin"
+            source.write_text("hlt\n", encoding="utf-8")
+            output.write_bytes(b"old binary")
+            result = subprocess.run(
+                [str(ASSEMBLER), str(source), str(output)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(output.read_bytes(), bytes([0xFF, 0, 0]))
 
     def test_rejects_invalid_assembly_without_partial_output(self):
         invalid = [
