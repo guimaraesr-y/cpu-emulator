@@ -1,112 +1,53 @@
-# 🚀 Emulador de CPU & Assembler
+# 🚀 Emulador de CPU e Assembler
 
-## 📝 Sobre o Projeto
+[English README](../README.md) · [Especificação da ISA v1](./isa-v1.md)
 
-Este projeto é um emulador de CPU e assembler simples escrito em C. Ele demonstra como simular uma CPU minimalista com instruções básicas e como montar instruções textuais em código de máquina legível. Esta é uma ferramenta de aprendizado excelente para entender como linguagens de montagem e conjuntos de instruções de CPU funcionam em baixo nível.
+Um emulador **educacional** de CPU e um assembler em C. Implementa oito registradores de 8 bits, 1.024 bytes de memória, saltos por endereço de byte e seis instruções (`MOV`, `ADD`, `SUB`, `JMP`, `XOR`, `HLT`). É um modelo funcional de instruções, sem simular circuitos físicos ou uma CPU comercial real.
 
-## ✨ Funcionalidades
+A [especificação ISA v1](./isa-v1.md) é a referência para opcodes, tamanho das instruções, encoding, overflow e validações.
 
-### 🖥️ Emulador de CPU
+## Compilar e executar
 
-✔️ Suporta operações básicas: `mov`, `add`, `sub`, `jmp`, `xor` e `hlt`.<br>
-✔️ Simula **8 registradores** (`R0` a `R7`).<br>
-✔️ **1024 bytes** de memória.<br>
-✔️ Executa instruções diretamente da memória.<br>
+Pré-requisitos: compilador C99 (GCC/Clang), Make e Python 3 para testes.
 
-### ⚙️ Assembler
-
-✔️ Converte instruções textuais em **código de máquina**.<br>
-✔️ Suporta os seguintes comandos: `mov`, `add`, `sub`, `jmp`, `xor`, `hlt`.<br>
-✔️ Fácil de estender com novas instruções!<br>
-
----
-
-## 📦 Pré-requisitos
-
-- Um compilador C (e.g., `gcc`).
-- Conhecimento básico de programação C e arquitetura de CPU.
-
-## 🚀 Como Usar
-
-### 🔹 Clonando o Repositório
-
-```bash
- git clone https://github.com/guimaraesr-y/cpu-emulator
- cd cpu-emulator
-```
-
-### 🔹 Compilando o Projeto
-
-Para compilar o assembler e o emulador:
-
-```bash
-gcc -o assembler assembler.c
-gcc -o emulator emulator.c
-```
-
-ou use Makefile:
-
-```bash
+```sh
 make
+./bin/assembler example_programs/program1.asm program.bin
+./bin/emulator program.bin
+make test
 ```
 
-### 🔹 Montando um Programa Assembly
+O Makefile gera `bin/assembler` e `bin/emulator`, evitando o conflito com o diretório `assembler/`. `make clean` remove os executáveis gerados.
 
-Crie um arquivo `program.asm` com o seguinte conteúdo:
+## Programa de exemplo
 
 ```asm
 mov R0, 10
 mov R1, 20
 add R0, R1
 sub R1, R0
-jmp 5
-hlt
+jmp fim
+mov R2, 99     ; instrução ignorada pelo salto
+fim: hlt
 ```
 
-Execute o assembler para gerar o código de máquina:
+O arquivo `example_programs/program1.asm` usa o rótulo `end` no lugar de `fim`, com a mesma lógica. O resultado é **R0 = 30**, **R1 = 246** e os demais registradores zerados. Como os registradores são **unsigned de 8 bits**, `20 - 30` resulta em `246` por overflow modular de 256. Valores negativos no `MOV` são codificados em complemento de dois: `mov R0, -1` armazena `255` (`0xFF`).
 
-```bash
-./assembler program.asm program.bin
-```
+O exemplo `example_programs/xor_program.asm` calcula `3 XOR 5 = 6` em `R0`.
 
-### 🔹 Executando o Emulador
+## Conjunto de instruções
 
-Execute o emulador com o código de máquina gerado:
+Cada instrução ocupa **exatamente 3 bytes**, incluindo `JMP` e `HLT`. `JMP` utiliza endereço de **byte**, codificado em 16 bits little-endian (aceita endereços acima de 255). Um rótulo como `fim:` é resolvido pelo assembler, inclusive em saltos para a frente.
 
-```bash
-./emulator program.bin
-```
+| Instrução | Efeito |
+| --- | --- |
+| `mov R0, 10` | Armazena um imediato de 8 bits |
+| `add R0, R1` | Soma módulo 256 |
+| `sub R0, R1` | Subtração módulo 256 |
+| `xor R0, R1` | Operação XOR bit a bit |
+| `jmp fim` | Salta para rótulo ou endereço válido de instrução |
+| `hlt` | Encerra a execução |
 
-### 📌 Saída Esperada
+O assembler rejeita sintaxe, registradores e endereços inválidos; o emulador rejeita bytecode incompleto, opcodes inválidos, saltos fora do programa e acessos indevidos, retornando código diferente de zero. A execução via CLI possui limite de 100.000 instruções para detectar loops infinitos. Os testes em `make test` cobrem fluxo completo (ASM → bytes → CPU), exemplos e casos de erro.
 
-```plaintext
-R0: 30
-R1: -10
-R2: 0
-R3: 0
-R4: 0
-R5: 0
-R6: 0
-R7: 0
-```
-
-## 🛠️ Instruction Set
-
-| Instruction | Description                                  | Example          |
-|-------------|----------------------------------------------|------------------|
-| `mov`       | Move um valor para um registrador            | `mov R0, 10`     |
-| `add`       | Adiciona valores de dois registradores       | `add R0, R1`     |
-| `sub`       | Subtrai valores de dois registradores        | `sub R1, R0`     |
-| `jmp`       | Salta para um endereço de memória específico | `jmp 5`          |
-| `xor`       | Executa uma operação XOR bit a bit           | `xor R0, R1`     |
-| `hlt`       | Interrompe a execução do programa            | `hlt`            |
-
-## 🤝 Contribuindo
-
-Sinta-se à vontade para abrir **issues** ou enviar **pull requests** para melhorar o projeto. Todas as contribuições são bem-vindas! 🛠️🚀
-
----
-
-## 🙌 Agradecimentos
-
-Este projeto foi inspirado nos conceitos básicos de **arquitetura de CPU** e **linguagem de montagem**. Agradeço a todos que contribuíram com ideias e feedback! 🎉
+Este núcleo servirá de base para o futuro laboratório 3D interativo de arquitetura de computadores.

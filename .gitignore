@@ -1,1 +1,4 @@
 *.exe
+/bin/
+*.bin
+__pycache__/

@@ -1,89 +1,43 @@
 # 🚀 CPU Emulator & Assembler
 
-Leia a versão [em português](./docs/readme_pt_br.md).
+[Leia em português](./docs/readme_pt_br.md) · [ISA v1 specification](./docs/isa-v1.md)
 
-## 📝 About the Project
+A small, **educational** CPU and assembler written in C. It implements a deterministic instruction set with eight 8-bit registers, 1,024 bytes of RAM, byte-addressed jumps, and six instructions (`MOV`, `ADD`, `SUB`, `JMP`, `XOR`, `HLT`). It models instruction behavior, not physical circuits or a real commercial processor.
 
-This project is a simple CPU emulator and assembler written in C. It demonstrates how to simulate a minimal CPU with basic instructions and how to assemble textual instructions into machine-readable bytecode. This is a great learning tool for understanding how assembly languages and CPU instruction sets work at a low level.
+The **ISA v1 specification** defines every opcode, encoding, arithmetic rule, and error condition: [docs/isa-v1.md](./docs/isa-v1.md).
 
-## ✨ Features
+## Build and run
 
-### 🖥️ CPU Emulator
+Requires a C99 compiler (`cc`/GCC/Clang), Make, and Python 3 for tests.
 
-✔️ Supports basic operations: `mov`, `add`, `sub`, `jmp`, `xor`, and `hlt`.<br>
-✔️ Simulates **8 registers** (`R0` to `R7`).<br>
-✔️ **1024 bytes** of memory.<br>
-✔️ Executes instructions directly from memory.<br>
-
-### ⚙️ Assembler
-
-✔️ Converts textual instructions into **bytecode**.<br>
-✔️ Supports the following commands: `mov`, `add`, `sub`, `jmp`, `xor`, `hlt`.<br>
-✔️ Easy to extend with new instructions!<br>
-
----
-
-## 📦 Prerequisites
-
-- A C compiler (e.g., `gcc`).
-- Basic knowledge of C programming and CPU architecture.
-
-## 🚀 How to Use
-
-### 🔹 Cloning the Repository
-
-```bash
- git clone https://github.com/guimaraesr-y/cpu-emulator
- cd cpu-emulator
-```
-
-### 🔹 Compiling the Project
-
-To compile the assembler and emulator:
-
-```bash
-gcc -o assembler assembler.c
-gcc -o emulator emulator.c
-```
-
-or use Makefile:
-
-```bash
+```sh
 make
+./bin/assembler example_programs/program1.asm program.bin
+./bin/emulator program.bin
+make test
 ```
 
-### 🔹 Assembling an Assembly Program
+`make` builds executables into `bin/`, avoiding the name conflict with the `assembler/` source directory. `make clean` removes generated executables. Use `make CFLAGS='-std=c99 -O2 -Wall -Wextra -Wpedantic'` to customize compiler flags.
 
-Create a file `program.asm` with the following content:
+## Example program
 
 ```asm
 mov R0, 10
 mov R1, 20
 add R0, R1
 sub R1, R0
-jmp 5
-hlt
+jmp end       ; label resolves to the HLT byte address
+mov R2, 99    ; skipped
+end: hlt
 ```
 
-Run the assembler to generate the bytecode:
+`example_programs/program1.asm` outputs:
 
-```bash
-./assembler program.asm program.bin
-```
-
-### 🔹 Running the Emulator
-
-Execute the emulator with the assembled bytecode:
-
-```bash
-./emulator program.bin
-```
-
-### 📌 Expected Output
-
-```plaintext
+```text
+HLT after 6 instruction(s)
+Final State of Registers:
 R0: 30
-R1: -10
+R1: 246
 R2: 0
 R3: 0
 R4: 0
@@ -92,23 +46,21 @@ R6: 0
 R7: 0
 ```
 
-## 🛠️ Instruction Set
+The registers are **unsigned 8-bit** values. `R1` wraps to **246** because `20 - 30` is `-10` modulo 256. Use `mov R0, -1` to store the bit pattern `0xFF` (displayed as `255`). The second example, `example_programs/xor_program.asm`, computes `3 XOR 5 = 6` in `R0`.
 
-| Instruction | Description                        | Example          |
-|-------------|------------------------------------|------------------|
-| `mov`       | Moves a value into a register      | `mov R0, 10`     |
-| `add`       | Adds values of two registers       | `add R0, R1`     |
-| `sub`       | Subtracts values of two registers  | `sub R1, R0`     |
-| `jmp`       | Jumps to a specific memory address | `jmp 5`          |
-| `xor`       | Performs a bitwise XOR operation   | `xor R0, R1`     |
-| `hlt`       | Halts the program execution        | `hlt`            |
+## Instruction set
 
-## 🤝 Contributing
+All instructions have a fixed **3-byte encoding** (opcode and two operand bytes). `JMP` uses a 16-bit little-endian **byte address**, so its target can be above 255; labels avoid hand-counting bytes.
 
-Feel free to open **issues** or submit **pull requests** to improve the project. All contributions are welcome! 🛠️🚀
+| Syntax | Effect |
+| --- | --- |
+| `mov R0, 10` | Put an immediate 8-bit value into a register |
+| `add R0, R1` | Unsigned addition modulo 256 |
+| `sub R0, R1` | Unsigned subtraction modulo 256 |
+| `xor R0, R1` | Bitwise XOR |
+| `jmp end` | Jump to a label or an aligned byte address |
+| `hlt` | Stop execution |
 
----
+The assembler rejects invalid operands and labels; the emulator rejects malformed or illegal bytecode with a nonzero exit code. The CLI also limits execution to 100,000 instructions to catch infinite loops. Automated end-to-end tests cover all six opcodes, jumps beyond the first 256 bytes, wrapping, and failure cases.
 
-## 🙌 Acknowledgments
-
-This project is inspired by the basics of **CPU architecture** and **assembly language**. Thanks to everyone who contributed ideas and feedback! 🎉
+This project is the execution foundation for a future interactive 3D CPU laboratory. Contributions and reviews are welcome.

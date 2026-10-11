@@ -1,0 +1,17 @@
+name: C ISA v1
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with strict warnings and run end-to-end tests
+        run: make CFLAGS='-std=c99 -O2 -Wall -Wextra -Wpedantic -Werror' test
+      - name: Run tests with undefined-behavior sanitizer
+        run: |
+          make clean
+          make CFLAGS='-std=c99 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=undefined -fno-sanitize-recover=all' test

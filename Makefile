@@ -1,25 +1,24 @@
-# Makefile for CPU Emulator and Assembler
+CC = cc
+CFLAGS = -std=c99 -O2 -Wall -Wextra -Wpedantic
 
-CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
+BIN_DIR = bin
+ASSEMBLER = $(BIN_DIR)/assembler
+EMULATOR = $(BIN_DIR)/emulator
 
-ASSEMBLER = assembler
-EMULATOR = emulator
-
-ASSEMBLER_SRC = assembler.c
-EMULATOR_SRC = main.c
-
-HEADERS = opcodes.h
-
+.PHONY: all clean test
 all: $(ASSEMBLER) $(EMULATOR)
 
-$(ASSEMBLER): $(ASSEMBLER_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) -o $(ASSEMBLER) $(ASSEMBLER_SRC)
+$(BIN_DIR):
+	mkdir -p $(BIN_DIR)
 
-$(EMULATOR): $(EMULATOR_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) -o $(EMULATOR) $(EMULATOR_SRC)
+$(ASSEMBLER): assembler.c opcodes.h variables.h | $(BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ assembler.c
+
+$(EMULATOR): main.c cpu/cpuFunctions.c cpu/cpu.h opcodes.h variables.h | $(BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ main.c cpu/cpuFunctions.c
+
+test: all
+	python3 -m unittest discover -s tests -v
 
 clean:
-	rm -f $(ASSEMBLER) $(EMULATOR)
-
-.PHONY: all clean
+	rm -rf $(BIN_DIR)
