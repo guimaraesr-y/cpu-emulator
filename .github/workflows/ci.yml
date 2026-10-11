@@ -15,3 +15,22 @@ jobs:
         run: |
           make clean
           make CFLAGS='-std=c99 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=undefined -fno-sanitize-recover=all' test
+  native-lab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native graphics dependencies
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev xvfb
+      - name: Build laboratory and run tests
+        run: |
+          cmake -S . -B build -DBUILD_VISUALIZER=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+          ctest --test-dir build --output-on-failure
+      - name: Render real CPU example
+        run: |
+          xvfb-run -a ./build/bin/cpu-lab --smoke-test lab-smoke.png
+          xvfb-run -a python3 scripts/check-native.py ./build/bin/cpu-lab
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-lab-captures
+          path: lab-smoke*.png*

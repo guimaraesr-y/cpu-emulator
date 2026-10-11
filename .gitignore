@@ -2,3 +2,6 @@
 /bin/
 *.bin
 __pycache__/
+/.deps/
+/build*/
+/lab-smoke*.png*

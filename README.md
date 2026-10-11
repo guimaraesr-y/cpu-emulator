@@ -63,4 +63,14 @@ All instructions have a fixed **3-byte encoding** (opcode and two operand bytes)
 
 The assembler rejects invalid operands and labels; the emulator rejects malformed or illegal bytecode with a nonzero exit code. The CLI also limits execution to 100,000 instructions to catch infinite loops. Automated end-to-end tests cover all six opcodes, jumps beyond the first 256 bytes, wrapping, and failure cases.
 
-This project is the execution foundation for a future interactive 3D CPU laboratory. Contributions and reviews are welcome.
+## Native 3D laboratory
+
+The Phase 1 desktop laboratory is written in C with raylib/raygui. It visualizes the real CPU state through fetch/decode/execute/writeback presentation phases, with step/reset controls, orbit/zoom camera, RAM bytes and decimal/hex/binary registers.
+
+```sh
+cmake -S . -B build -DBUILD_VISUALIZER=ON
+cmake --build build --config Release --parallel
+./build/bin/cpu-lab  # Windows: build\bin\cpu-lab.exe
+```
+
+See [native laboratory setup, controls and verification](docs/native-lab.md) for platform dependencies and the Make workflow. Contributions and reviews are welcome.

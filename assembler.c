@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 
 #include "opcodes.h"
 #include "variables.h"
@@ -244,6 +248,31 @@ static int resolve_jumps(Assembly *assembly) {
  * stat() follows symlinks, so this also catches hardlinks and path aliases.
  */
 static int output_references_source(const char *source, const char *output) {
+#ifdef _WIN32
+    /* Windows CRT stat() does not provide a unique inode. Compare file IDs. */
+    HANDLE input = CreateFileA(source, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                              NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (input == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Cannot inspect assembly source (Windows error %lu)\n", GetLastError());
+        return -1;
+    }
+    HANDLE target = CreateFileA(output, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                               NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (target == INVALID_HANDLE_VALUE) {
+        DWORD error = GetLastError();
+        CloseHandle(input);
+        if (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND) return 0;
+        fprintf(stderr, "Cannot inspect bytecode output (Windows error %lu)\n", error);
+        return -1;
+    }
+    BY_HANDLE_FILE_INFORMATION a, b;
+    int valid = GetFileInformationByHandle(input, &a) && GetFileInformationByHandle(target, &b);
+    CloseHandle(input);
+    CloseHandle(target);
+    if (!valid) { fprintf(stderr, "Cannot inspect Windows file identity\n"); return -1; }
+    return a.dwVolumeSerialNumber == b.dwVolumeSerialNumber &&
+           a.nFileIndexHigh == b.nFileIndexHigh && a.nFileIndexLow == b.nFileIndexLow;
+#else
     struct stat source_info;
     struct stat output_info;
 
@@ -260,6 +289,7 @@ static int output_references_source(const char *source, const char *output) {
     }
     return source_info.st_dev == output_info.st_dev &&
            source_info.st_ino == output_info.st_ino;
+#endif
 }
 
 int main(int argc, char **argv) {

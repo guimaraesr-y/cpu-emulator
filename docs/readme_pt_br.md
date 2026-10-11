@@ -50,4 +50,14 @@ Cada instrução ocupa **exatamente 3 bytes**, incluindo `JMP` e `HLT`. `JMP` ut
 
 O assembler rejeita sintaxe, registradores e endereços inválidos; o emulador rejeita bytecode incompleto, opcodes inválidos, saltos fora do programa e acessos indevidos, retornando código diferente de zero. A execução via CLI possui limite de 100.000 instruções para detectar loops infinitos. Os testes em `make test` cobrem fluxo completo (ASM → bytes → CPU), exemplos e casos de erro.
 
-Este núcleo servirá de base para o futuro laboratório 3D interativo de arquitetura de computadores.
+## Laboratório 3D nativo — Fase 1
+
+O laboratório desktop já usa este núcleo real, com raylib/raygui em C. Oferece execução por passo, reset, câmera orbital, bytes da RAM, registradores em decimal/hex/binário e animações didáticas de FETCH/DECODE/EXECUTE/WRITEBACK.
+
+```sh
+cmake -S . -B build -DBUILD_VISUALIZER=ON
+cmake --build build --config Release --parallel
+./build/bin/cpu-lab  # Windows: build\bin\cpu-lab.exe
+```
+
+Consulte [instalação, controles e verificação](native-lab.md). O build padrão da CLI continua independente das bibliotecas gráficas.
