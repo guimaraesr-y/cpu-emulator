@@ -44,4 +44,4 @@ The assembler fails with a nonzero exit code and does not create an output file 
 
 The emulator fails with a nonzero exit code for malformed program length, unknown opcodes, invalid registers, illegal jump targets, nonzero `HLT` padding, PC beyond loaded code, and I/O failures. On a fault, the PC remains at the faulting instruction. A CLI safety limit of **100,000 executed instructions** catches infinite loops. Neither error nor step limit prints a successful final register state.
 
-The `cpu/cpu.h` API provides a zeroed reset, bounded bytecode load, and deterministic single-instruction `cpu_step`; no console output is embedded in the CPU core. A richer instruction trace and WebAssembly UI are scoped to the subsequent 3D laboratory work.
+The `cpu/cpu.h` API provides a zeroed reset, bounded bytecode load, and deterministic single-instruction `cpu_step`; no console output is embedded in the CPU core. The [native 3D laboratory](native-lab.md) captures before/after snapshots through a separate playback adapter and renders them in C with raylib/raygui.

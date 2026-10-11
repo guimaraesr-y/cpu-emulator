@@ -8,8 +8,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSEMBLER = ROOT / "bin" / "assembler"
-EMULATOR = ROOT / "bin" / "emulator"
+ASSEMBLER = Path(os.environ.get("CPU_ASSEMBLER", ROOT / "bin" / "assembler"))
+EMULATOR = Path(os.environ.get("CPU_EMULATOR", ROOT / "bin" / "emulator"))
 
 
 class EndToEndTests(unittest.TestCase):
